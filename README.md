@@ -68,6 +68,10 @@ clear it all in one go. It also picks the picture that fits the question by itse
 charts, maps, worked maths, geometry figures, photos with their parts named, 3D models whose parts move, and
 quizzes you answer with a click.
 
+## Use Roamies with Orion
+
+Connect the desktop tools, screen awareness, browser and app workflows, and personal continuity to Orion through the authenticated MCP bridge. See [Connect Roamies to Orion](docs/ORION_BRIDGE.md) for setup and security details.
+
 ## Also included
 
 - **The Roamies panel:** click the menu bar or tray icon (on Linux, **Open Panel** in its menu) for what it's doing, what it remembers, and every setting.
