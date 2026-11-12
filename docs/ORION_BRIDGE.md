@@ -21,6 +21,8 @@ Roamies can expose its existing desktop capabilities to Orion through a stateles
 
 For Orion running on the same computer, use the loopback URL directly. For remote access, the HTTPS proxy's hostname and certificate must be trusted by Android; the MCP bearer token remains required as a second layer.
 
+> **One active MCP endpoint:** Orion currently uses one remote MCP endpoint at a time. If the managed API Anything endpoint is active, stop/disconnect it in Orion's MCP settings before pairing Roamies. Orion's built-in phone tools remain available either way; this limitation affects only the remote MCP connector.
+
 ## Capabilities
 
 Orion can use the exposed Roamies tools for:
