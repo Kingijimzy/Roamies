@@ -39,6 +39,7 @@ import { canCircle, canSnap, hasHands, hasHotkeys, hasVoice, linuxSession, micTr
 import { keyCards, keyKinds, signInCards } from './providers.mjs';
 import { activityLogs, buildReport, redact, reportDir, reportName, reveal, run, scrubConfig, tail } from './diagnostics.mjs';
 import { detailsText, explain } from './errors.mjs';
+import { createOrionBridge } from './orion-bridge.mjs';
 
 console.log = console.info = (...a) => console.error(...a);
 const send = (o) => process.stdout.write(JSON.stringify(o) + '\n');
@@ -1264,6 +1265,7 @@ function menu() {
     { id: 'status', label: status, enabled: false },
     { sep: true },
     { id: 'panel', label: 'Open Panel…' },
+    { id: 'orion_bridge', label: orionBridge ? 'Connect Orion…' : 'Orion Bridge unavailable' },
     { id: 'show', label: `Show ${lookName()}`, ...(HOTKEYS_OK ? { accel: keys().summon } : {}) },
     { id: 'ask', label: `Ask ${lookName()}…`, enabled: !busy },
     ...(SNAP_OK ? [{ id: 'snap', label: 'Ask About an Area…', accel: keys().snap }] : []),
@@ -1452,6 +1454,9 @@ function onWriteTap() {
   else typeToAsk({ interrupt: true }).catch((e) => console.error('ask', e));
 }
 
+let orionBridge = null;
+let orionBridgeError = '';
+
 async function onMenu(id) {
   if (id === 'show') ui({ kind: 'summon', show: true });
   else if (id === 'ask') await typeToAsk();
@@ -1461,6 +1466,14 @@ async function onMenu(id) {
     freshSession('new'); menu();
     say('Fresh start. What are we doing?', 'happy');
   } else if (id.startsWith('forget:')) { await forgetFact(id.slice(7)); menu(); }
+  else if (id === 'orion_bridge') {
+    if (!orionBridge) { panelNote(orionBridgeError || 'Orion bridge is not running. Restart Roamies and check its diagnostics.', true); send({ type: 'panel_show' }); }
+    else {
+      const pair = await orionBridge.credentials();
+      send({ type: 'panel_show' });
+      setTimeout(() => panelNote(`ORION MCP CONNECTION (private — do not share this token)\\nLocal endpoint: ${pair.endpoint}\\nBearer token: ${pair.token}\\n\\nFor Orion on another device, expose this loopback endpoint only through a trusted HTTPS mesh/reverse proxy such as Tailscale Serve. Then configure the resulting HTTPS /mcp URL and this token in Orion → Settings → Integrations → Remote MCP. Never expose port 18789 directly to the internet or an untrusted LAN.`), 500);
+    }
+  }
   else if (id === 'panel') send({ type: 'panel_show' });
   else if (id === 'quit') send({ type: 'quit' });
   // The panel asks first in its own words, so this one doesn't ask again.
@@ -1731,6 +1744,16 @@ async function onGuide(m) {
 }
 
 // ---------- main ----------
+// Start the desktop capability bridge once the existing tools and user-confirmation UI are ready.
+createOrionBridge({
+  tools, secrets,
+  onStatus: (s) => {
+    if (s.state === 'ready') { orionBridgeError = ''; console.error('Orion MCP bridge listening on loopback:', s.endpoint); }
+    else if (s.state === 'error') { orionBridgeError = s.message || 'Bridge error'; console.error('Orion MCP bridge:', orionBridgeError); }
+  },
+}).then((bridge) => { orionBridge = bridge; menu(); })
+  .catch((e) => { orionBridgeError = String(e?.message ?? e); console.error('Orion MCP bridge unavailable:', orionBridgeError); menu(); });
+
 createInterface({ input: process.stdin }).on('line', (line) => {
   let m;
   try { m = JSON.parse(line); } catch { return; }
