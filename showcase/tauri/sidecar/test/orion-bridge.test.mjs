@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createOrionBridge } from '../orion-bridge.mjs';
+import { z } from 'zod';
 
 const calls = [];
 const secrets = {
@@ -8,7 +9,7 @@ const secrets = {
   async set(_name, value) { this.value = value; },
 };
 const tools = [
-  { name: 'read_window', description: 'Read the current desktop window.', parameters: (await import('zod')).z.object({ target: (await import('zod')).z.string().optional() }), execute: async (args) => { calls.push(args); return 'Window contents'; } },
+  { name: 'read_window', description: 'Read the current desktop window.', parameters: z.object({ target: z.string().optional() }), execute: async (args) => { calls.push(args); return 'Window contents'; } },
 ];
 
 const bridge = await createOrionBridge({ tools, secrets, port: 0 });
